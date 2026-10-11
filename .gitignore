@@ -38,8 +38,19 @@ local.properties
 # node.js
 #
 node_modules/
+sync_backend_stub/node_modules/
 npm-debug.log
 yarn-error.log
+*.log
+*.rgba
+*.pdf
+
+# Environment & OS
+.env
+.env.*
+Thumbs.db
+.DS_Store
+
 
 # fastlane
 #

@@ -1,0 +1,12 @@
+{
+  "name": "sync-backend-stub",
+  "version": "1.0.0",
+  "description": "Backend stub para TP6 Network Diagnostics Suite",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}

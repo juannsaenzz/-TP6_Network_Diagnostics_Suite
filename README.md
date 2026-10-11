@@ -1,97 +1,131 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+# Network Diagnostics Suite
 
-# Getting Started
+Suite móvil para técnicos de infraestructura y telecomunicaciones desarrollada en **React Native**, diseñada bajo una arquitectura **Offline-First**. Permite descubrir equipos en red local, auditar métricas SNMP en tiempo real, ejecutar comandos administrativos remotos vía SSH, registrar relevamientos de campo georreferenciados (fotos + GPS) y sincronizar reportes de instalación de forma transaccional.
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+**Materia:** Desarrollo de Aplicaciones Móviles  
+**Trabajo Práctico:** TP6 — Network Diagnostics Suite  
+**Alumno:** Juan Saenz  
+**Año:** 2026  
 
-## Step 1: Start Metro
+---
 
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
+## 🚀 Características Principales
 
-To start the Metro dev server, run the following command from the root of your React Native project:
+1. **Descubrimiento en Red Local (mDNS / Bonjour) [RF-01]:**
+   * Emisión y escucha de paquetes multicast UDP en `224.0.0.251:5353` vía `react-native-zeroconf`.
+   * Incluye degradación elegante con entrada manual para redes con *AP Isolation* o filtros IGMP.
 
-```sh
-# Using npm
+2. **Telemetría y Métricas SNMPv2c [RF-02]:**
+   * Cliente propio ligero sobre sockets UDP sin procesar (`react-native-udp`, puerto 161).
+   * Encoder y decoder BER / ASN.1 que consulta OIDs estándar de la MIB-II (Hostname, Uptime, Bytes RX/TX) sin bloquear la interfaz.
+
+3. **Diagnóstico Remoto SSH y Seguridad [RF-03]:**
+   * Ejecución interactiva de comandos (`ping`, `traceroute`, `ifconfig`, `ip route`) vía `react-native-ssh-sftp`.
+   * Almacenamiento de credenciales protegido en hardware seguro mediante **Android Keystore / iOS Keychain** (`react-native-keychain`).
+
+4. **Identificación de Activos por Código QR [RF-04]:**
+   * Visión artificial mediante `react-native-vision-camera`, `react-native-nitro-image` y `jsQR`.
+   * Disparador bajo demanda (*On-Demand Trigger*), normalización de paso de línea de GPU (*Row Stride*) y algoritmo de estiramiento de contraste dinámico para pantallas LCD.
+   * Entrada manual de contingencia ante códigos QR dañados en el rack.
+
+5. **Relevamiento de Campo (Fotos + GPS Satelital) [RF-05]:**
+   * Captura fotográfica de evidencias con cámara de alta resolución.
+   * Geoposicionamiento satelital de alta precisión vía `react-native-geolocation-service`.
+
+6. **Generación Autónoma de Reportes PDF [RF-06]:**
+   * Exportación local de informes técnicos formateados con `react-native-html-to-pdf`.
+   * Evidencias fotográficas embebidas en Base64 para evitar enlaces rotos a archivos temporales.
+
+7. **Arquitectura Offline-First con Cola Outbox [RF-07 & RF-08]:**
+   * Base de datos local reactiva con **WatermelonDB (SQLite)**.
+   * Patrón *Transactional Outbox* para encolar transacciones en campo y sincronizarlas automáticamente en segundo plano cuando `NetInfo` detecta conectividad activa.
+
+---
+
+## 📁 Estructura del Proyecto
+
+```
+NetworkDiagnosticsSuite/
+├── src/
+│   ├── assets/              # Fuentes tipográficas (Cairo) e imágenes
+│   ├── db/                  # Esquemas y modelos reactivos de WatermelonDB (SQLite)
+│   │   ├── models/          # Entidades: Outbox, Installation, Diagnostic, Equipment
+│   │   └── schema.ts        # Definición de tablas y versiones de la BD
+│   ├── navigation/          # React Navigation (Native Stack)
+│   ├── screens/             # Vistas de la aplicación:
+│   │   ├── DeviceListScreen.tsx      # Dashboard principal y métricas de red
+│   │   ├── DeviceDetailsScreen.tsx   # Ficha técnica, SNMP y telemetría
+│   │   ├── DiagnosticScreen.tsx      # Consola remota SSH interactiva
+│   │   ├── QRScannerScreen.tsx       # Escáner óptico con visor y cámara
+│   │   ├── EvidenceFormScreen.tsx    # Formulario de fotos y geolocalización
+│   │   └── DiscoveryScreen.tsx       # Escáner LAN (mDNS / Zeroconf)
+│   ├── services/            # Servicios desacoplados de infraestructura:
+│   │   ├── snmpService.ts            # Cliente UDP BER/ASN.1
+│   │   ├── sshService.ts             # Cliente SSH y Keychain
+│   │   ├── syncService.ts            # Sincronización Outbox y NetInfo
+│   │   ├── discoveryService.ts       # Multicast Zeroconf
+│   │   ├── evidenceService.ts        # Almacenamiento local de fotos y GPS
+│   │   └── reportService.ts          # Compilador HTML a PDF
+│   └── theme/               # Paleta de colores, tipografía y estilos
+├── sync_backend_stub/       # Backend stub ligero en Node.js/Express para pruebas de sync
+├── documento_tecnico.md     # Documento técnico oficial de arquitectura
+└── qr_router.png            # Código QR de prueba precargado (192.168.1.1)
+```
+
+---
+
+## 🛠️ Requisitos Previos
+
+* **Node.js:** v18.x o superior
+* **JDK:** OpenJDK 17
+* **Android Studio & SDK:** Android API Level 34 (Android 14) con NDK configurado
+* **Dispositivo Android físico o emulador**
+
+---
+
+## 💻 Instalación y Puesta en Marcha
+
+### 1. Clonar e Instalar Dependencias
+```bash
+git clone <URL_DEL_REPOSITORIO>
+cd NetworkDiagnosticsSuite
+npm install
+```
+
+### 2. Iniciar el Backend Stub de Sincronización (Opcional para pruebas Offline)
+Para probar la sincronización automática de la cola *Outbox*:
+```bash
+cd sync_backend_stub
+npm install
+node server.js
+```
+*El servidor escuchará en el puerto 3000 (`http://<TU_IP_LOCAL>:3000/api/sync`).*
+
+### 3. Iniciar el Servidor de Empaquetado Metro
+En una terminal en la raíz del proyecto:
+```bash
 npm start
-
-# OR using Yarn
-yarn start
 ```
 
-## Step 2: Build and run your app
-
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
-
-### Android
-
-```sh
-# Using npm
+### 4. Compilar y Ejecutar en Android
+En otra terminal:
+```bash
 npm run android
-
-# OR using Yarn
-yarn android
 ```
 
-### iOS
+---
 
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
+## 📋 Matriz de Cumplimiento de Requisitos
 
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
+| Identificador | Requisito del PRD | Estado | Componente Principal |
+| :---: | :--- | :---: | :--- |
+| **RF-01** | Descubrimiento en LAN (mDNS / Bonjour) | **Cumplido** | `discoveryService.ts` (`react-native-zeroconf`) |
+| **RF-02** | Consulta de Métricas SNMP (UDP raw) | **Cumplido** | `snmpService.ts` (`react-native-udp`) |
+| **RF-03** | Diagnóstico Remoto SSH y Credenciales | **Cumplido** | `sshService.ts` (`react-native-ssh-sftp` + Keychain) |
+| **RF-04** | Identificación de Equipo por QR / Código | **Cumplido** | `QRScannerScreen.tsx` (`react-native-vision-camera`) |
+| **RF-05** | Captura de Evidencia (Fotos + GPS real) | **Cumplido** | `EvidenceFormScreen.tsx` (`geolocation-service`) |
+| **RF-06** | Generación de Reporte de Instalación PDF | **Cumplido** | `reportService.ts` (`react-native-html-to-pdf`) |
+| **RF-07** | Cola de Sincronización Offline-First | **Cumplido** | `syncService.ts` (Patrón Outbox + `NetInfo`) |
+| **RF-08** | Visualización de Historial Offline | **Cumplido** | `DeviceDetailsScreen.tsx` (WatermelonDB + Modal) |
 
-```sh
-bundle install
-```
-
-Then, and every time you update your native dependencies, run:
-
-```sh
-bundle exec pod install
-```
-
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
-
-```sh
-# Using npm
-npm run ios
-
-# OR using Yarn
-yarn ios
-```
-
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
-
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
-
-## Step 3: Modify your app
-
-Now that you have successfully run the app, let's make changes!
-
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
-
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
-
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
-
-## Congratulations! :tada:
-
-You've successfully run and modified your React Native App. :partying_face:
-
-### Now what?
-
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
-
-# Troubleshooting
-
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
-
-# Learn More
-
-To learn more about React Native, take a look at the following resources:
-
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+Para una explicación exhaustiva de los trade-offs de ingeniería, algoritmos criptográficos y estructura de paquetes de red, consultar [documento_tecnico.md](documento_tecnico.md).
